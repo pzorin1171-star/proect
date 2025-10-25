@@ -2,13 +2,16 @@
   "name": "robot-programming-game",
   "version": "1.0.0",
   "description": "Educational robot programming game",
-  "main": "proect/server.js",
+  "main": "server.js",
   "scripts": {
-    "start": "cd proect && node server.js",
-    "build": "cd proect && npm install"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5"
-  }
+  },
+  "keywords": ["education", "programming", "game", "robot"],
+  "author": "Teacher",
+  "license": "MIT"
 }
