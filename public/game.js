@@ -20,9 +20,8 @@ const textures = {
 };
 
 // Загрузка текстур
-textures.robot.src = 'images/white_guy.png';
-textures.enemy.src = 'images/red_guy.png';
-
+textures.robot.src = 'white_guy.png';
+textures.enemy.src = 'red_guy.png';
 // Игровое состояние
 let gameState = {
     currentScreen: 'mode-selection',
