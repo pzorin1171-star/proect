@@ -1,20 +1,14 @@
 {
-  "name": "robot-programming-game-server",
+  "name": "robot-programming-game",
   "version": "1.0.0",
-  "description": "Server for robot programming educational game",
-  "main": "index.js",
+  "description": "Educational robot programming game",
+  "main": "proect/server.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "cd proect && node server.js",
+    "build": "cd proect && npm install"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
-  "keywords": ["education", "programming", "game", "robot"],
-  "author": "Teacher",
-  "license": "MIT"
+  }
 }
