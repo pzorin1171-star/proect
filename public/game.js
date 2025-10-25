@@ -19,9 +19,48 @@ const textures = {
     enemy: new Image()
 };
 
-// Загрузка текстур
-textures.robot.src = 'white_guy.png';
-textures.enemy.src = 'red_guy.png';
+// Загрузка текстур с обработкой ошибок
+textures.robot.onerror = function() {
+    console.log('Robot image failed to load, using fallback');
+};
+textures.enemy.onerror = function() {
+    console.log('Enemy image failed to load, using fallback');
+};
+
+// Пробуем разные пути к изображениям
+const imagePaths = [
+    'white_guy.png',
+    'images/white_guy.png',
+    '/white_guy.png',
+    './white_guy.png'
+];
+
+let robotLoaded = false;
+let enemyLoaded = false;
+
+// Пробуем загрузить изображения по разным путям
+imagePaths.forEach(path => {
+    if (!robotLoaded) {
+        const img = new Image();
+        img.onload = function() {
+            textures.robot = img;
+            robotLoaded = true;
+        };
+        img.src = path;
+    }
+});
+
+imagePaths.forEach(path => {
+    if (!enemyLoaded) {
+        const img = new Image();
+        img.onload = function() {
+            textures.enemy = img;
+            enemyLoaded = true;
+        };
+        img.src = path.replace('white_guy', 'red_guy');
+    }
+});
+
 // Игровое состояние
 let gameState = {
     currentScreen: 'mode-selection',
@@ -99,69 +138,15 @@ const gameUI = document.getElementById('game-ui');
 const programmingArea = document.getElementById('programming-area');
 const programSlots = document.getElementById('program-slots');
 const deleteZone = document.getElementById('delete-zone');
-const gameResultElement = document.getElementById('game-result');
-const resultTitle = document.getElementById('result-title');
-const resultMessage = document.getElementById('result-message');
-const gameFailElement = document.getElementById('game-fail');
-const failTitle = document.getElementById('fail-title');
-const failMessage = document.getElementById('fail-message');
-const enemyCollisionElement = document.getElementById('enemy-collision');
-const enemyTitle = document.getElementById('enemy-title');
-const enemyMessage = document.getElementById('enemy-message');
 
 // Переменные для динамического размера
 let gridSize;
 let gameAreaHeight;
 let offsetX, offsetY;
 
-// API базовый URL
-const API_BASE_URL = window.location.hostname === 'localhost' ? 
-    'http://localhost:3000/api' : '/api';
-
-// Функции для работы с API
-async function apiRequest(endpoint, options = {}) {
-    try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
-            ...options
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
-    }
-}
-
-// Сохранение прогресса ученика
-async function saveStudentProgress(level, coinsEarned) {
-    if (!gameState.userData.studentId || !level.lessonId) return;
-    
-    try {
-        await apiRequest('/student/progress', {
-            method: 'POST',
-            body: JSON.stringify({
-                studentId: gameState.userData.studentId,
-                lessonId: level.lessonId,
-                levelId: level.id,
-                score: 100, // Максимальный балл за успешное прохождение
-                coins: coinsEarned
-            })
-        });
-    } catch (error) {
-        console.error('Failed to save student progress:', error);
-    }
-}
-
 // Инициализация игры
 function init() {
+    console.log('Initializing game...');
     setupButtons();
     setupDragAndDrop();
     window.addEventListener('resize', handleResize);
@@ -172,6 +157,8 @@ function init() {
 
 // Обработка изменения размера окна
 function handleResize() {
+    if (!canvas) return;
+    
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
@@ -188,15 +175,46 @@ function handleResize() {
 
 // Настройка обработчиков кнопок
 function setupButtons() {
+    console.log('Setting up buttons...');
+    
     // Кнопки программирования
     const runProgramBtn = document.getElementById('run-program-btn');
     const resetProgramBtn = document.getElementById('reset-program-btn');
     
     if (runProgramBtn) {
         runProgramBtn.addEventListener('click', runProgram);
+        console.log('Run program button found');
+    } else {
+        console.log('Run program button NOT found');
     }
+    
     if (resetProgramBtn) {
         resetProgramBtn.addEventListener('click', resetProgram);
+    }
+    
+    // Кнопки навигации
+    const levelsBackBtn = document.getElementById('levels-back-btn');
+    const gameBackBtn = document.getElementById('game-back-btn');
+    
+    if (levelsBackBtn) {
+        levelsBackBtn.addEventListener('click', () => {
+            if (currentMode === 'teacher') {
+                showScreen('teacher-menu');
+            } else {
+                showScreen('student-menu');
+            }
+        });
+    }
+    
+    if (gameBackBtn) {
+        gameBackBtn.addEventListener('click', () => {
+            resetGame();
+            if (currentMode === 'teacher') {
+                showScreen('teacher-menu');
+            } else {
+                showScreen('student-menu');
+            }
+        });
     }
     
     // Кнопки результатов игры
@@ -218,6 +236,7 @@ function setupButtons() {
 // Настройка перетаскивания команд
 function setupDragAndDrop() {
     const commands = document.querySelectorAll('.command');
+    console.log('Found commands:', commands.length);
     
     commands.forEach(command => {
         command.addEventListener('dragstart', (e) => {
@@ -256,13 +275,23 @@ function setupDragAndDrop() {
 
 // Показать экран
 function showScreen(screenName) {
+    console.log('Showing screen:', screenName);
+    
     // Скрыть все экраны
     const screens = document.querySelectorAll('.screen');
-    screens.forEach(screen => screen.classList.add('hidden'));
+    screens.forEach(screen => {
+        if (screen) screen.classList.add('hidden');
+    });
     
     // Скрыть игровой UI и область программирования
     if (gameUI) gameUI.classList.add('hidden');
     if (programmingArea) programmingArea.classList.add('hidden');
+    
+    // Скрыть результаты игры
+    const gameResultElement = document.getElementById('game-result');
+    const gameFailElement = document.getElementById('game-fail');
+    const enemyCollisionElement = document.getElementById('enemy-collision');
+    
     if (gameResultElement) gameResultElement.classList.add('hidden');
     if (gameFailElement) gameFailElement.classList.add('hidden');
     if (enemyCollisionElement) enemyCollisionElement.classList.add('hidden');
@@ -280,6 +309,8 @@ function showScreen(screenName) {
         const screen = document.getElementById(`${screenName}-screen`);
         if (screen) {
             screen.classList.remove('hidden');
+        } else {
+            console.error('Screen not found:', screenName);
         }
     }
     
@@ -288,17 +319,28 @@ function showScreen(screenName) {
     // Обновление контента экрана
     if (screenName === 'levels') {
         renderLevelsScreen();
+    } else if (screenName === 'shop') {
+        updateCoinsDisplay();
+        if (typeof initShop === 'function') initShop();
+    } else if (screenName === 'join-lesson') {
+        if (typeof loadActiveLessons === 'function') loadActiveLessons();
+    } else if (screenName === 'workshop') {
+        if (typeof initWorkshop === 'function') initWorkshop();
     }
 }
 
 // Рендер экрана уровней
 function renderLevelsScreen() {
     const container = document.getElementById('levels-container');
-    if (!container) return;
+    if (!container) {
+        console.log('Levels container not found');
+        return;
+    }
     
     container.innerHTML = '';
     
     const allLevels = [...gameState.levels, ...(gameState.userData.customLevels || [])];
+    console.log('Rendering levels:', allLevels.length);
     
     allLevels.forEach((level, index) => {
         const card = document.createElement('div');
@@ -326,10 +368,15 @@ function renderLevelsScreen() {
 // Начать уровень
 function startLevel(levelIndex) {
     const allLevels = [...gameState.levels, ...(gameState.userData.customLevels || [])];
-    if (levelIndex >= allLevels.length || !allLevels[levelIndex].unlocked) return;
+    if (levelIndex >= allLevels.length || !allLevels[levelIndex].unlocked) {
+        console.log('Level not available:', levelIndex);
+        return;
+    }
     
     gameState.currentLevel = levelIndex;
     const level = allLevels[levelIndex];
+    
+    console.log('Starting level:', level.title);
     
     // Сброс состояния игры
     resetLevelState(levelIndex);
@@ -342,7 +389,6 @@ function startLevel(levelIndex) {
     if (currentTaskElement) currentTaskElement.textContent = level.description;
     
     showScreen('game');
-    setupProgramSlots();
 }
 
 // Вычислить смещение для центрирования уровня
@@ -388,12 +434,19 @@ function resetLevelState(levelIndex) {
     const allLevels = [...gameState.levels, ...(gameState.userData.customLevels || [])];
     const level = allLevels[levelIndex];
     
-    // Восстановление начального состояния уровня
-    if (level.initialState) {
-        level.robot = {...level.initialState.robot};
-        level.enemies = [...level.initialState.enemies];
-        level.obstacles = [...level.initialState.obstacles];
+    // Сохраняем начальное состояние если его нет
+    if (!level.initialState) {
+        level.initialState = {
+            robot: {...level.robot},
+            enemies: [...level.enemies],
+            obstacles: [...level.obstacles]
+        };
     }
+    
+    // Восстановление начального состояния уровня
+    level.robot = {...level.initialState.robot};
+    level.enemies = [...level.initialState.enemies];
+    level.obstacles = [...level.initialState.obstacles];
     
     gameState.program = [];
     gameState.isRunning = false;
@@ -402,11 +455,16 @@ function resetLevelState(levelIndex) {
     gameState.gameResult = null;
     gameState.currentCommandSteps = 0;
     gameState.totalCommandSteps = 0;
+    
+    updateProgramSlots();
 }
 
 // Настройка слотов программы
 function setupProgramSlots() {
-    if (!programSlots) return;
+    if (!programSlots) {
+        console.log('Program slots container not found');
+        return;
+    }
     
     programSlots.innerHTML = '';
     
@@ -431,26 +489,30 @@ function setupProgramSlots() {
             e.preventDefault();
             slot.classList.remove('highlight');
             
-            const commandData = JSON.parse(e.dataTransfer.getData('text/plain'));
-            const source = e.dataTransfer.getData('source');
-            const targetIndex = parseInt(slot.dataset.index);
-            
-            if (source === 'panel') {
-                // Добавляем новую команду из панели
-                if (!gameState.program[targetIndex]) {
-                    gameState.program[targetIndex] = commandData;
+            try {
+                const commandData = JSON.parse(e.dataTransfer.getData('text/plain'));
+                const source = e.dataTransfer.getData('source');
+                const targetIndex = parseInt(slot.dataset.index);
+                
+                if (source === 'panel') {
+                    // Добавляем новую команду из панели
+                    if (!gameState.program[targetIndex]) {
+                        gameState.program[targetIndex] = commandData;
+                    }
+                } else if (source === 'slot') {
+                    // Перемещаем блок между слотами
+                    if (gameState.draggedBlockIndex !== null && gameState.draggedBlockIndex !== targetIndex) {
+                        // Меняем местами блоки
+                        const temp = gameState.program[targetIndex];
+                        gameState.program[targetIndex] = gameState.program[gameState.draggedBlockIndex];
+                        gameState.program[gameState.draggedBlockIndex] = temp;
+                    }
                 }
-            } else if (source === 'slot') {
-                // Перемещаем блок между слотами
-                if (gameState.draggedBlockIndex !== null && gameState.draggedBlockIndex !== targetIndex) {
-                    // Меняем местами блоки
-                    const temp = gameState.program[targetIndex];
-                    gameState.program[targetIndex] = gameState.program[gameState.draggedBlockIndex];
-                    gameState.program[gameState.draggedBlockIndex] = temp;
-                }
+                
+                updateProgramSlots();
+            } catch (error) {
+                console.error('Error handling drop:', error);
             }
-            
-            updateProgramSlots();
         });
         
         programSlots.appendChild(slot);
@@ -555,8 +617,17 @@ function getCommandText(commandData) {
 
 // Запуск программы
 function runProgram() {
-    if (gameState.isRunning || gameState.program.length === 0) return;
+    if (gameState.isRunning) {
+        console.log('Program is already running');
+        return;
+    }
     
+    if (gameState.program.length === 0 || gameState.program.every(cmd => !cmd)) {
+        alert('Добавьте команды в программу!');
+        return;
+    }
+    
+    console.log('Running program...');
     gameState.isRunning = true;
     gameState.currentStep = 0;
     gameState.currentCommandSteps = 0;
@@ -658,12 +729,7 @@ function performMovementStep() {
     // Проверка столкновения с врагом
     if (isOnEnemy(level.robot.x, level.robot.y)) {
         gameState.isRunning = false;
-        if (enemyTitle) enemyTitle.textContent = 'СТОЛКНОВЕНИЕ С ВРАГОМ!';
-        if (enemyMessage) enemyMessage.textContent = 'Робот столкнулся с врагом и был уничтожен.';
-        if (enemyCollisionElement) enemyCollisionElement.classList.remove('hidden');
-        // Блокируем взаимодействие с игровым полем
-        if (gameUI) gameUI.classList.add('blocked');
-        if (programmingArea) programmingArea.classList.add('blocked');
+        showEnemyCollision();
         return;
     }
 }
@@ -680,6 +746,21 @@ function isOnEnemy(x, y) {
     const allLevels = [...gameState.levels, ...(gameState.userData.customLevels || [])];
     const level = allLevels[gameState.currentLevel];
     return level.enemies.some(enemy => enemy.x === x && enemy.y === y);
+}
+
+// Показать столкновение с врагом
+function showEnemyCollision() {
+    const enemyCollisionElement = document.getElementById('enemy-collision');
+    const enemyTitle = document.getElementById('enemy-title');
+    const enemyMessage = document.getElementById('enemy-message');
+    
+    if (enemyTitle) enemyTitle.textContent = 'СТОЛКНОВЕНИЕ С ВРАГОМ!';
+    if (enemyMessage) enemyMessage.textContent = 'Робот столкнулся с врагом и был уничтожен.';
+    if (enemyCollisionElement) enemyCollisionElement.classList.remove('hidden');
+    
+    // Блокируем взаимодействие с игровым полем
+    if (gameUI) gameUI.classList.add('blocked');
+    if (programmingArea) programmingArea.classList.add('blocked');
 }
 
 // Проверить результат игры
@@ -702,11 +783,6 @@ function checkGameResult() {
         gameState.userData.coins += level.reward || 10;
         updateCoinsDisplay();
         
-        // Сохраняем прогресс ученика
-        if (hasStudentAccess() && level.isFromLesson) {
-            saveStudentProgress(level, level.reward || 10);
-        }
-        
         // Открываем следующий уровень, если он существует
         if (gameState.currentLevel < gameState.levels.length - 1) {
             gameState.levels[gameState.currentLevel + 1].unlocked = true;
@@ -717,17 +793,22 @@ function checkGameResult() {
     } else if (isOnTarget && !allEnemiesDefeated) {
         // Робот на цели, но враги остались
         gameState.gameResult = 'lose';
-        if (failTitle) failTitle.textContent = 'ВРАГИ НЕ УНИЧТОЖЕНЫ!';
-        if (failMessage) failMessage.textContent = 'Робот достиг цели, но не все враги уничтожены.';
-        showGameResult(false);
+        showGameResult(false, 'ВРАГИ НЕ УНИЧТОЖЕНЫ!', 'Робот достиг цели, но не все враги уничтожены.');
     } else {
         gameState.gameResult = 'lose';
-        showGameResult(false);
+        showGameResult(false, 'ПОПРОБУЙТЕ СНОВА', 'Робот не достиг цели. Попробуйте другую программу.');
     }
 }
 
 // Показать результат игры
-function showGameResult(isWin) {
+function showGameResult(isWin, title = '', message = '') {
+    const gameResultElement = document.getElementById('game-result');
+    const gameFailElement = document.getElementById('game-fail');
+    const resultTitle = document.getElementById('result-title');
+    const resultMessage = document.getElementById('result-message');
+    const failTitle = document.getElementById('fail-title');
+    const failMessage = document.getElementById('fail-message');
+    
     // Блокируем взаимодействие с игровым полем
     if (gameUI) gameUI.classList.add('blocked');
     if (programmingArea) programmingArea.classList.add('blocked');
@@ -737,16 +818,23 @@ function showGameResult(isWin) {
         if (resultMessage) resultMessage.textContent = `Поздравляем! Вы заработали ${gameState.levels[gameState.currentLevel].reward || 10} монет.`;
         if (gameResultElement) gameResultElement.classList.remove('hidden');
     } else {
+        if (failTitle) failTitle.textContent = title;
+        if (failMessage) failMessage.textContent = message;
         if (gameFailElement) gameFailElement.classList.remove('hidden');
     }
 }
 
 // Повторить уровень
 function retryLevel() {
+    const gameFailElement = document.getElementById('game-fail');
+    const enemyCollisionElement = document.getElementById('enemy-collision');
+    
     if (gameFailElement) gameFailElement.classList.add('hidden');
     if (enemyCollisionElement) enemyCollisionElement.classList.add('hidden');
+    
     resetLevelState(gameState.currentLevel);
     updateProgramSlots();
+    
     // Разблокируем взаимодействие с игровым полем
     if (gameUI) gameUI.classList.remove('blocked');
     if (programmingArea) programmingArea.classList.remove('blocked');
@@ -754,6 +842,7 @@ function retryLevel() {
 
 // Следующий уровень
 function nextLevel() {
+    const gameResultElement = document.getElementById('game-result');
     if (gameResultElement) gameResultElement.classList.add('hidden');
     
     if (gameState.currentLevel < gameState.levels.length - 1) {
@@ -794,6 +883,8 @@ function resetGame() {
 
 // Рендер игры
 function renderGame() {
+    if (!ctx || gameState.currentScreen !== 'game') return;
+    
     // Очистка canvas
     ctx.fillStyle = COLORS.BACKGROUND;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -843,7 +934,7 @@ function renderGame() {
         const screenX = offsetX + (enemy.x + gameState.levelOffset.x) * gridSize;
         const screenY = offsetY + (enemy.y + gameState.levelOffset.y) * gridSize;
         
-        // Используем текстуру врага с увеличением в 2 раза
+        // Используем текстуру врага или запасной вариант
         if (textures.enemy.complete) {
             const size = gridSize * 2;
             const offset = (size - gridSize) / 2;
@@ -855,26 +946,13 @@ function renderGame() {
             const offset = (size - gridSize) / 2;
             ctx.fillRect(screenX - offset, screenY - offset, size, size);
         }
-        
-        // Отображение радиуса атаки
-        ctx.strokeStyle = 'rgba(239, 83, 80, 0.5)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(
-            screenX + gridSize / 2,
-            screenY + gridSize / 2,
-            gridSize * 1.5,
-            0,
-            Math.PI * 2
-        );
-        ctx.stroke();
     });
     
     // Отрисовка робота
     const robotX = offsetX + (level.robot.x + gameState.levelOffset.x) * gridSize;
     const robotY = offsetY + (level.robot.y + gameState.levelOffset.y) * gridSize;
     
-    // Используем текстуру робота с увеличением в 2 раза
+    // Используем текстуру робота или запасной вариант
     if (textures.robot.complete) {
         const size = gridSize * 2;
         const offset = (size - gridSize) / 2;
@@ -917,10 +995,7 @@ function renderGame() {
 
 // Игровой цикл
 function gameLoop() {
-    if (gameState.currentScreen === 'game') {
-        renderGame();
-    }
-    
+    renderGame();
     requestAnimationFrame(gameLoop);
 }
 
@@ -934,32 +1009,36 @@ function updateCoinsDisplay() {
 
 // Сохранение в localStorage
 function saveToLocalStorage() {
-    localStorage.setItem('robotGameData', JSON.stringify(gameState.userData));
+    try {
+        localStorage.setItem('robotGameData', JSON.stringify(gameState.userData));
+    } catch (error) {
+        console.error('Failed to save to localStorage:', error);
+    }
 }
 
 // Загрузка из localStorage
 function loadFromLocalStorage() {
-    const savedData = localStorage.getItem('robotGameData');
-    if (savedData) {
-        gameState.userData = JSON.parse(savedData);
+    try {
+        const savedData = localStorage.getItem('robotGameData');
+        if (savedData) {
+            gameState.userData = JSON.parse(savedData);
+        }
+        updateCoinsDisplay();
+    } catch (error) {
+        console.error('Failed to load from localStorage:', error);
     }
-    updateCoinsDisplay();
-}
-
-// Проверка доступа к функциям в зависимости от режима
-function hasTeacherAccess() {
-    return currentMode === 'teacher';
-}
-
-function hasStudentAccess() {
-    return currentMode === 'student';
 }
 
 // Скрыть все экраны
 function hideAllScreens() {
     const screens = document.querySelectorAll('.screen');
-    screens.forEach(screen => screen.classList.add('hidden'));
+    screens.forEach(screen => {
+        if (screen) screen.classList.add('hidden');
+    });
 }
 
 // Запуск игры
-init();
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing game...');
+    init();
+});
