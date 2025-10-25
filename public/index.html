@@ -1,1 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Программирование Робота</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container" class="medieval-border">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- Экран выбора режима -->
+        <div id="mode-selection" class="screen">
+            <h1>🤖 Программирование Робота</h1>
+            <p class="parchment">Выберите режим для начала игры</p>
+            
+            <div class="menu-buttons">
+                <button class="button" id="teacher-mode-btn">👨‍🏫 Режим учителя</button>
+                <button class="button" id="student-mode-btn">👨‍🎓 Режим ученика</button>
+            </div>
+        </div>
+        
+        <!-- Главное меню учителя -->
+        <div id="teacher-menu" class="screen hidden">
+            <h1>👨‍🏫 Режим учителя</h1>
+            <p class="parchment">Создавайте уровни, уроки и настраивайте обучение</p>
+            
+            <div class="menu-buttons">
+                <button class="button" id="teacher-levels-btn">📚 Уровни</button>
+                <button class="button" id="teacher-lessons-btn">📖 Уроки</button>
+                <button class="button" id="workshop-btn">🔧 Мастерская</button>
+                <button class="button" id="shop-btn">🛒 Магазин оценок</button>
+                <button class="button" id="teacher-tutorial-btn">📖 Пособие</button>
+                <button class="button" id="back-to-mode-btn">🔄 Сменить режим</button>
+            </div>
+        </div>
+        
+        <!-- Главное меню ученика -->
+        <div id="student-menu" class="screen hidden">
+            <h1>👨‍🎓 Режим ученика</h1>
+            <p class="parchment">Изучайте программирование и выполняйте задания</p>
+            
+            <div class="menu-buttons">
+                <button class="button" id="student-levels-btn">📚 Уровни</button>
+                <button class="button" id="join-lesson-btn">🔗 Присоединиться к уроку</button>
+                <button class="button" id="student-tutorial-btn">📖 Пособие</button>
+                <button class="button" id="back-to-mode-btn-student">🔄 Сменить режим</button>
+            </div>
+        </div>
+        
+        <!-- Экран подключения к уроку -->
+        <div id="join-lesson-screen" class="screen hidden">
+            <h2>🔗 Присоединиться к уроку</h2>
+            <p class="parchment">Введите код урока от вашего учителя</p>
+            
+            <div class="join-lesson-container">
+                <div class="input-group">
+                    <label for="lesson-code">Код урока:</label>
+                    <input type="text" id="lesson-code" placeholder="Введите 6-значный код" maxlength="6">
+                </div>
+                <button class="button" id="connect-lesson-btn">Подключиться</button>
+                <button class="button" id="join-lesson-back-btn">← Назад</button>
+            </div>
+            
+            <div class="active-lessons">
+                <h3>Активные уроки</h3>
+                <div id="active-lessons-list" class="lessons-list">
+                    <!-- Список активных уроков будет здесь -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Остальные экраны (уровни, уроки, мастерская, магазин и т.д.) -->
+        <!-- Они остаются такими же, но будут показываться в зависимости от режима -->
+        
+        <div id="levels-screen" class="screen hidden">
+            <h2>📚 Уровни</h2>
+            <p class="parchment">Выберите уровень для программирования робота</p>
+            
+            <button class="button" id="levels-back-btn">← Назад</button>
+            
+            <div class="card-grid" id="levels-container">
+            </div>
+        </div>
+        
+        <div id="lessons-screen" class="screen hidden">
+            <h2>📖 Уроки</h2>
+            <p class="parchment">Выберите урок для изучения</p>
+            
+            <button class="button" id="lessons-back-btn">← Назад</button>
+            
+            <div class="card-grid" id="lessons-container">
+            </div>
+        </div>
+        
+        <div id="workshop-screen" class="screen hidden">
+            <h2>🔧 Мастерская</h2>
+            <p class="parchment">Создавайте собственные уровни и уроки</p>
+            
+            <button class="button" id="workshop-back-btn">← Назад</button>
+            
+            <div class="workshop-tabs">
+                <button class="button tab-button active" data-tab="level-editor">Редактор уровней</button>
+                <button class="button tab-button" data-tab="lesson-editor">Редактор уроков</button>
+                <button class="button tab-button" data-tab="my-levels">Мои уровни</button>
+                <button class="button tab-button" data-tab="my-lessons">Мои уроки</button>
+            </div>
+            
+            <div id="level-editor" class="tab-content active">
+                <div class="editor-container">
+                    <div class="editor-tools">
+                        <h3>Инструменты</h3>
+                        <div class="tool-buttons">
+                            <button class="button tool-button active" data-tool="robot">🤖 Робот</button>
+                            <button class="button tool-button" data-tool="target">🎯 Цель</button>
+                            <button class="button tool-button" data-tool="enemy">👹 Враг</button>
+                            <button class="button tool-button" data-tool="obstacle">🧱 Стена</button>
+                            <button class="button tool-button" data-tool="erase">🧹 Удалить</button>
+                        </div>
+                        
+                        <div class="editor-settings">
+                            <h3>Настройки уровня</h3>
+                            <div class="setting">
+                                <label>Название уровня:</label>
+                                <input type="text" id="level-title" placeholder="Введите название">
+                            </div>
+                            <div class="setting">
+                                <label>Описание:</label>
+                                <textarea id="level-description" placeholder="Введите описание"></textarea>
+                            </div>
+                            <div class="setting">
+                                <label>Награда (монетки):</label>
+                                <input type="number" id="level-reward" min="0" max="100" value="10">
+                            </div>
+                            <div class="setting">
+                                <label>Сложность:</label>
+                                <select id="level-difficulty">
+                                    <option value="easy">Легкая</option>
+                                    <option value="medium">Средняя</option>
+                                    <option value="hard">Сложная</option>
+                                </select>
+                            </div>
+                            <div class="setting">
+                                <label>Код урока (для учеников):</label>
+                                <input type="text" id="lesson-code-input" placeholder="Автогенерация" readonly>
+                                <button class="button small-button" id="generate-code-btn">Сгенерировать код</button>
+                            </div>
+                        </div>
+                        
+                        <div class="editor-actions">
+                            <button class="button" id="save-level-btn">💾 Сохранить уровень</button>
+                            <button class="button" id="clear-level-btn">🗑️ Очистить поле</button>
+                            <button class="button" id="test-level-btn">🎮 Тестировать уровень</button>
+                        </div>
+                    </div>
+                    
+                    <div class="editor-canvas-container">
+                        <canvas id="editor-canvas" width="600" height="600"></canvas>
+                        <div class="editor-info">
+                            <p>Текущий инструмент: <span id="current-tool">🤖 Робот</span></p>
+                            <p>Координаты: <span id="cursor-coords">X: 0, Y: 0</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="lesson-editor" class="tab-content">
+                <div class="lesson-editor-container">
+                    <div class="lesson-settings">
+                        <h3>Настройки урока</h3>
+                        <div class="setting">
+                            <label>Название урока:</label>
+                            <input type="text" id="lesson-title" placeholder="Введите название">
+                        </div>
+                        <div class="setting">
+                            <label>Описание:</label>
+                            <textarea id="lesson-description" placeholder="Введите описание"></textarea>
+                        </div>
+                        <div class="setting">
+                            <label>Код урока:</label>
+                            <input type="text" id="lesson-share-code" placeholder="Автогенерация" readonly>
+                            <button class="button small-button" id="generate-lesson-code-btn">Сгенерировать код</button>
+                        </div>
+                        <button class="button" id="save-lesson-btn">💾 Сохранить урок</button>
+                    </div>
+                    
+                    <div class="lesson-levels">
+                        <h3>Уровни урока</h3>
+                        <div id="available-levels-list" class="levels-list">
+                            <h4>Доступные уровни</h4>
+                            <div id="available-levels"></div>
+                        </div>
+                        <div id="lesson-levels-list" class="levels-list">
+                            <h4>Уровни в уроке</h4>
+                            <div id="selected-levels"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="my-levels" class="tab-content">
+                <h3>Мои созданные уровни</h3>
+                <div class="card-grid" id="my-levels-container">
+                </div>
+            </div>
+            
+            <div id="my-lessons" class="tab-content">
+                <h3>Мои созданные уроки</h3>
+                <div class="lesson-management">
+                    <div class="lesson-actions">
+                        <button class="button" id="share-lesson-btn">📤 Поделиться уроком</button>
+                        <button class="button" id="view-stats-btn">📊 Статистика урока</button>
+                    </div>
+                </div>
+                <div class="card-grid" id="my-lessons-container">
+                </div>
+            </div>
+        </div>
+        
+        <div id="shop-screen" class="screen hidden">
+            <h2>🛒 Магазин оценок</h2>
+            
+            <div class="shop-info">
+                <div class="coins-display">
+                    <span class="coins-icon">🪙</span>
+                    <span id="coins-count">0</span> монет
+                </div>
+            </div>
+            
+            <button class="button" id="shop-back-btn">← Назад</button>
+            
+            <div class="shop-items">
+                <div class="shop-item">
+                    <div class="grade-display">5</div>
+                    <div class="item-info">
+                        <h3>Оценка 5</h3>
+                        <p>Отлично!</p>
+                        <div class="price">Цена: <span class="price-amount" data-grade="5">50</span> 🪙</div>
+                    </div>
+                    <button class="button buy-btn" data-grade="5">Купить</button>
+                </div>
+                
+                <div class="shop-item">
+                    <div class="grade-display">4</div>
+                    <div class="item-info">
+                        <h3>Оценка 4</h3>
+                        <p>Хорошо!</p>
+                        <div class="price">Цена: <span class="price-amount" data-grade="4">30</span> 🪙</div>
+                    </div>
+                    <button class="button buy-btn" data-grade="4">Купить</button>
+                </div>
+                
+                <div class="shop-item">
+                    <div class="grade-display">3</div>
+                    <div class="item-info">
+                        <h3>Оценка 3</h3>
+                        <p>Удовлетворительно</p>
+                        <div class="price">Цена: <span class="price-amount" data-grade="3">15</span> 🪙</div>
+                    </div>
+                    <button class="button buy-btn" data-grade="3">Купить</button>
+                </div>
+                
+                <div class="shop-item">
+                    <div class="grade-display">2</div>
+                    <div class="item-info">
+                        <h3>Оценка 2</h3>
+                        <p>Неудовлетворительно</p>
+                        <div class="price">Цена: <span class="price-amount" data-grade="2">5</span> 🪙</div>
+                    </div>
+                    <button class="button buy-btn" data-grade="2">Купить</button>
+                </div>
+            </div>
+            
+            <div class="shop-settings">
+                <h3>Настройки цен</h3>
+                <div class="price-settings">
+                    <div class="price-setting">
+                        <label>Цена за оценку 5:</label>
+                        <input type="number" class="price-input" data-grade="5" min="1" max="1000" value="50">
+                    </div>
+                    <div class="price-setting">
+                        <label>Цена за оценку 4:</label>
+                        <input type="number" class="price-input" data-grade="4" min="1" max="1000" value="30">
+                    </div>
+                    <div class="price-setting">
+                        <label>Цена за оценку 3:</label>
+                        <input type="number" class="price-input" data-grade="3" min="1" max="1000" value="15">
+                    </div>
+                    <div class="price-setting">
+                        <label>Цена за оценку 2:</label>
+                        <input type="number" class="price-input" data-grade="2" min="1" max="1000" value="5">
+                    </div>
+                </div>
+                <button class="button" id="save-prices-btn">💾 Сохранить цены</button>
+            </div>
+        </div>
+        
+        <!-- Остальные элементы (игровой UI, программирование, результаты) остаются без изменений -->
+        
+    </div>
 
+    <script src="game.js"></script>
+    <script src="workshop.js"></script>
+    <script src="shop.js"></script>
+    <script src="mode.js"></script>
+</body>
+</html>
