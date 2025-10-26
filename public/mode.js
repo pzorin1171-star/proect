@@ -93,7 +93,7 @@ function register() {
     
     const newUser = {
         username: username,
-        password: password, // В реальном приложении пароль должен быть хеширован!
+        password: password,
         type: userType,
         registeredAt: new Date().toISOString()
     };
@@ -230,7 +230,6 @@ function addTestAssignment() {
     const assignmentName = prompt('Введите название задания:');
     if (assignmentName) {
         alert(`Задание "${assignmentName}" добавлено!`);
-        // Здесь можно добавить логику сохранения задания
     }
 }
 
@@ -266,7 +265,7 @@ function showAuthMessage(message, color = 'red') {
     }
 }
 
-// Обновленная функция главного меню с учетом авторизации
+// ОСНОВНЫЕ ФУНКЦИИ МЕНЮ - ИСПРАВЛЕНЫ
 function showMainMenu() {
     const screen = document.getElementById('screen');
     screen.innerHTML = `
@@ -284,10 +283,200 @@ function showMainMenu() {
     `;
 }
 
-// Остальные функции (showLevelSelect, showShop, showWorkshop, etc.) остаются такими же, 
-// но с небольшими изменениями для сохранения данных пользователя
+function startGame() {
+    currentLevel = 0;
+    loadLevel(currentLevel);
+}
 
-// Обновляем функции сохранения для работы с системой пользователей
+function showLevelSelect() {
+    const screen = document.getElementById('screen');
+    let levelsHTML = '';
+    
+    levels.forEach((level, index) => {
+        levelsHTML += `
+            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                <h3>${level.name}</h3>
+                <p>Сложность: ${level.difficulty}</p>
+                <p>Статус: ${level.completed ? 'Пройден' : 'Не пройден'}</p>
+                <p>Звёзды: ${level.stars}/3</p>
+                <button onclick="loadLevel(${index})">Играть</button>
+            </div>
+        `;
+    });
+    
+    screen.innerHTML = `
+        <div>
+            <h2>Выбор уровня</h2>
+            ${levelsHTML}
+            <button onclick="showMainMenu()" style="background: #ff4444; margin-top: 20px;">Назад</button>
+        </div>
+    `;
+}
+
+function showShop() {
+    const screen = document.getElementById('screen');
+    screen.innerHTML = `
+        <div>
+            <h2>Магазин</h2>
+            <p>Здесь будут предметы для покупки</p>
+            <button onclick="showMainMenu()" style="background: #ff4444; margin-top: 20px;">Назад</button>
+        </div>
+    `;
+}
+
+function showWorkshop() {
+    const screen = document.getElementById('screen');
+    screen.innerHTML = `
+        <div>
+            <h2>Мастерская</h2>
+            <p>Очки улучшения: <span id="upgrade-points">${upgradePoints}</span></p>
+            
+            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                <h3>Скорость</h3>
+                <p>Уровень: <span id="speed-level">${playerStats.speed}</span></p>
+                <button onclick="upgradeStat('speed')">Улучшить (10 очков)</button>
+            </div>
+            
+            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                <h3>Прыжок</h3>
+                <p>Уровень: <span id="jump-level">${playerStats.jump}</span></p>
+                <button onclick="upgradeStat('jump')">Улучшить (10 очков)</button>
+            </div>
+            
+            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                <h3>Прочность</h3>
+                <p>Уровень: <span id="health-level">${playerStats.health}</span></p>
+                <button onclick="upgradeStat('health')">Улучшить (15 очков)</button>
+            </div>
+            
+            <button onclick="showMainMenu()" style="background: #ff4444; margin-top: 20px;">Назад</button>
+        </div>
+    `;
+}
+
+function showScoreShop() {
+    const screen = document.getElementById('screen');
+    screen.innerHTML = `
+        <div>
+            <h2>Магазин оценок</h2>
+            <p>Ваши очки: <span id="score-points">${score}</span></p>
+            
+            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                <h3>Оценка 5</h3>
+                <p>Стоимость: 100 очков</p>
+                <button onclick="buyGrade(5)">Купить</button>
+            </div>
+            
+            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                <h3>Оценка 4</h3>
+                <p>Стоимость: 75 очков</p>
+                <button onclick="buyGrade(4)">Купить</button>
+            </div>
+            
+            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                <h3>Оценка 3</h3>
+                <p>Стоимость: 50 очков</p>
+                <button onclick="buyGrade(3)">Купить</button>
+            </div>
+            
+            <button onclick="showMainMenu()" style="background: #ff4444; margin-top: 20px;">Назад</button>
+        </div>
+    `;
+}
+
+function showSettings() {
+    const screen = document.getElementById('screen');
+    screen.innerHTML = `
+        <div>
+            <h2>Настройки</h2>
+            <p>Настройки звука, графики и управления</p>
+            <button onclick="showMainMenu()" style="background: #ff4444; margin-top: 20px;">Назад</button>
+        </div>
+    `;
+}
+
+// ФУНКЦИИ ГЕЙМПЛЕЯ
+function loadLevel(levelIndex) {
+    currentLevel = levelIndex;
+    const screen = document.getElementById('screen');
+    screen.innerHTML = `
+        <div>
+            <h2>Уровень ${levelIndex + 1} - ${levels[levelIndex].name}</h2>
+            <p>Сложность: ${levels[levelIndex].difficulty}</p>
+            <p>Игровой процесс будет здесь...</p>
+            
+            <div style="border: 1px solid #ccc; padding: 15px; margin: 15px 0;">
+                <h3>Управление:</h3>
+                <p>← → - Движение</p>
+                <p>Пробел - Прыжок</p>
+                <p>ESC - Пауза</p>
+            </div>
+            
+            <button onclick="completeLevel(${levelIndex})" style="background: #4CAF50;">Завершить уровень (тест)</button>
+            <button onclick="showLevelSelect()" style="background: #ff4444; margin-top: 10px;">Выйти в меню</button>
+        </div>
+    `;
+}
+
+function completeLevel(levelIndex) {
+    levels[levelIndex].completed = true;
+    levels[levelIndex].stars = Math.min(3, levels[levelIndex].stars + 1);
+    score += 50;
+    upgradePoints += 5;
+    saveGame();
+    alert(`Уровень ${levelIndex + 1} пройден! +50 очков, +5 очков улучшения`);
+    showLevelSelect();
+}
+
+// СИСТЕМА УЛУЧШЕНИЙ И ПОКУПОК
+function upgradeStat(stat) {
+    const cost = stat === 'health' ? 15 : 10;
+    
+    if (upgradePoints >= cost) {
+        upgradePoints -= cost;
+        playerStats[stat]++;
+        updateWorkshopDisplay();
+        saveGame();
+        alert(`${stat === 'speed' ? 'Скорость' : stat === 'jump' ? 'Прыжок' : 'Прочность'} улучшена до уровня ${playerStats[stat]}!`);
+    } else {
+        alert('Недостаточно очков улучшения!');
+    }
+}
+
+function updateWorkshopDisplay() {
+    const upgradePointsEl = document.getElementById('upgrade-points');
+    const speedLevelEl = document.getElementById('speed-level');
+    const jumpLevelEl = document.getElementById('jump-level');
+    const healthLevelEl = document.getElementById('health-level');
+    
+    if (upgradePointsEl) upgradePointsEl.textContent = upgradePoints;
+    if (speedLevelEl) speedLevelEl.textContent = playerStats.speed;
+    if (jumpLevelEl) jumpLevelEl.textContent = playerStats.jump;
+    if (healthLevelEl) healthLevelEl.textContent = playerStats.health;
+}
+
+function buyGrade(grade) {
+    const costs = {3: 50, 4: 75, 5: 100};
+    const cost = costs[grade];
+    
+    if (score >= cost) {
+        score -= cost;
+        alert(`Вы купили оценку ${grade}!`);
+        updateScoreShopDisplay();
+        saveGame();
+    } else {
+        alert('Недостаточно очков!');
+    }
+}
+
+function updateScoreShopDisplay() {
+    const scorePointsEl = document.getElementById('score-points');
+    if (scorePointsEl) {
+        scorePointsEl.textContent = score;
+    }
+}
+
+// СИСТЕМА СОХРАНЕНИЯ
 function saveGame() {
     if (!isTeacher && currentUser) {
         // Обновляем данные текущего пользователя
@@ -342,17 +531,7 @@ function loadCurrentUser() {
     return false;
 }
 
-// Обновленная функция completeLevel для сохранения прогресса ученика
-function completeLevel(levelIndex) {
-    levels[levelIndex].completed = true;
-    levels[levelIndex].stars = Math.min(3, levels[levelIndex].stars + 1);
-    score += 50;
-    upgradePoints += 5;
-    saveGame();
-    showLevelSelect();
-}
-
-// Обновленная инициализация
+// ИНИЦИАЛИЗАЦИЯ
 window.addEventListener('load', function() {
     loadUsers();
     
@@ -378,6 +557,3 @@ window.addEventListener('load', function() {
         showAuthScreen();
     }
 });
-
-// Остальные функции (showLevelSelect, showShop, showWorkshop, showScoreShop, upgradeStat, buyGrade, etc.)
-// остаются без изменений из предыдущего кода, но теперь они автоматически сохраняют данные через saveGame()
